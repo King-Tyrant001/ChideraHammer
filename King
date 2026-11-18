@@ -1,0 +1,90 @@
+import os
+from telegram import Update, ChatPermissions
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.constants import ChatMemberStatus
+
+TOKEN = os.getenv()8781640859:AAG0jbGeu_f_w5ICHt8Zky-7UqkSOvB-rR0
+
+async def is_admin(update, context):
+    member = await update.effective_chat.get_member(update.effective_user.id)
+    return member.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]
+
+async def start(update, context):
+    await update.message.reply_text("🔨 ChideraHammer is alive! Add me to a group + make me Admin. Reply to a message and use /ban /kick /mute")
+
+async def help_cmd(update, context):
+    await update.message.reply_text("🔨 COMMANDS:\n/ban - Ban user (reply)\n/unban - Unban\n/kick - Kick user\n/mute - Mute user\n/unmute - Unmute\n/warn - Warn user\n/info - User info")
+
+async def ban(update, context):
+    if not await is_admin(update, context):
+        return await update.message.reply_text("Only admins can use me!")
+    if not update.message.reply_to_message:
+        return await update.message.reply_text("Reply to the person's message and type /ban")
+    target = update.message.reply_to_message.from_user
+    try:
+        await update.effective_chat.ban_member(target.id)
+        await update.message.reply_text(f"🔨 {target.first_name} has been BANNED!")
+    except Exception as e:
+        await update.message.reply_text(f"Failed. Make me Admin with Ban permission.")
+
+async def unban(update, context):
+    if not await is_admin(update, context):
+        return await update.message.reply_text("Only admins can use me!")
+    if not update.message.reply_to_message:
+        return await update.message.reply_text("Reply to the person's message and type /unban")
+    target = update.message.reply_to_message.from_user
+    await update.effective_chat.unban_member(target.id)
+    await update.message.reply_text(f"✅ {target.first_name} unbanned.")
+
+async def kick(update, context):
+    if not await is_admin(update, context):
+        return await update.message.reply_text("Only admins can use me!")
+    if not update.message.reply_to_message:
+        return await update.message.reply_text("Reply to the person's message and type /kick")
+    target = update.message.reply_to_message.from_user
+    await update.effective_chat.ban_member(target.id)
+    await update.effective_chat.unban_member(target.id)
+    await update.message.reply_text(f"👢 {target.first_name} kicked!")
+
+async def mute(update, context):
+    if not await is_admin(update, context):
+        return await update.message.reply_text("Only admins can use me!")
+    if not update.message.reply_to_message:
+        return await update.message.reply_text("Reply to the person's message and type /mute")
+    target = update.message.reply_to_message.from_user
+    await update.effective_chat.restrict_member(target.id, ChatPermissions(can_send_messages=False))
+    await update.message.reply_text(f"🔇 {target.first_name} muted.")
+
+async def unmute(update, context):
+    if not await is_admin(update, context):
+        return await update.message.reply_text("Only admins can use me!")
+    if not update.message.reply_to_message:
+        return await update.message.reply_text("Reply to the person's message and type /unmute")
+    target = update.message.reply_to_message.from_user
+    await update.effective_chat.restrict_member(target.id, ChatPermissions(can_send_messages=True, can_send_media_messages=True, can_send_other_messages=True, can_add_web_page_previews=True))
+    await update.message.reply_text(f"🔊 {target.first_name} unmuted.")
+
+async def warn(update, context):
+    if not update.message.reply_to_message:
+        return await update.message.reply_text("Reply to the person's message and type /warn")
+    target = update.message.reply_to_message.from_user
+    await update.message.reply_text(f"⚠️ Warning to {target.first_name}! Behave or you meet the hammer 🔨")
+
+async def info(update, context):
+    if not update.message.reply_to_message:
+        return await update.message.reply_text("Reply to a user and type /info")
+    u = update.message.reply_to_message.from_user
+    await update.message.reply_text(f"👤 Name: {u.first_name}\nID: {u.id}\nUsername: @{u.username}")
+
+app = ApplicationBuilder().token(TOKEN).build()
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("help", help_cmd))
+app.add_handler(CommandHandler("ban", ban))
+app.add_handler(CommandHandler("unban", unban))
+app.add_handler(CommandHandler("kick", kick))
+app.add_handler(CommandHandler("mute", mute))
+app.add_handler(CommandHandler("unmute", unmute))
+app.add_handler(CommandHandler("warn", warn))
+app.add_handler(CommandHandler("info", info))
+print("ChideraHammer running...")
+app.run_polling()
